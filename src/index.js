@@ -5,13 +5,15 @@ const {machineIdSync} = require('node-machine-id');
 const Store = require('electron-store');
 const dayjs = require('dayjs');
 const axios = require('axios');
+const rootPath = require('electron-root-path').rootPath;
 
 module.exports = class Unlock {
-    constructor(config, autoUpdater) {
+    constructor(mainWindow, config, autoUpdater) {
+        this.mainWindow = mainWindow;
+
         this.config = Object.assign({
             updater: {
-                url: 'https://dist.unlock.sh/v1/electron',
-                type: 'electron-native'
+                url: 'https://dist.unlock.sh/v1/electron'
             }
         }, config);
         this.store = new Store({name: 'unlock', encryptionKey: this.config.api.productId});
@@ -26,13 +28,13 @@ module.exports = class Unlock {
         }
     }
 
-    hasActiveLicense() {
+    app() {
         if (this.store.has('license')) {
             if (this.checkinRequired()) {
                 this.hasValidLicense();
             }
 
-            return true;
+            return this.mainWindow.show();
         }
 
         this.promptLicenseWindow();
@@ -50,7 +52,8 @@ module.exports = class Unlock {
             }
         });
 
-        licenseWindow.loadFile(`${__dirname}/../../node_modules/unlock-electron-license/src/app.html`, {query: {"data": JSON.stringify(this.config)}});
+        // licenseWindow.loadFile(`${app.getAppPath()}../node_modules/@unlocksh/unlock-electron-license/src/app.html`, {query: {"data": JSON.stringify(this.config)}});
+        licenseWindow.loadFile(path.join(rootPath, 'node_modules/@unlocksh/unlock-electron-license/src/app.html'), {query: {"data": JSON.stringify(this.config)}});
 
         // Open the DevTools.
         // licenseWindow.webContents.openDevTools();
@@ -64,6 +67,7 @@ module.exports = class Unlock {
             });
 
             licenseWindow.close();
+            this.mainWindow.show();
         });
     }
 
@@ -120,8 +124,9 @@ module.exports = class Unlock {
 
     registerAutoUpdater() {
         const licenseKey = this.store.has('license.key');
+        const updaterType = (typeof this.autoUpdater.checkForUpdatesAndNotify === "function") ? 'electron-builder' : 'electron-native';
 
-        if (this.config.updater.type === 'electron-native') {
+        if (updaterType === 'electron-native') {
             this.autoUpdater.setFeedURL({
                 url: this.config.updater.url + '/' + this.config.api.productId + '/releases?key=' + licenseKey,
                 serverType: 'json',
@@ -134,7 +139,7 @@ module.exports = class Unlock {
                 this.autoUpdater.checkForUpdates();
             }, 30000);
         }
-        if (this.config.updater.type === 'electron-builder') {
+        if (updaterType === 'electron-builder') {
             this.autoUpdater.setFeedURL({
                 url: this.config.updater.url + '/' + this.config.api.productId + '/update/' + process.platform + '/' + app.getVersion() + '?key=' + licenseKey,
                 serverType: 'json',

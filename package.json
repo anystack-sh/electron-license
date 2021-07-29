@@ -19,22 +19,23 @@
   "homepage": "https://unlock.sh",
   "license": "MIT",
   "devDependencies": {
-    "autoprefixer": "^10.3.1",
-    "laravel-mix": "^6.0.27",
-    "postcss": "^8.3.6",
-    "tailwindcss": "^2.2.7"
-  },
-  "dependencies": {
     "@tailwindcss/forms": "^0.3.3",
     "alpinejs": "^3.2.2",
+    "autoprefixer": "^10.3.1",
     "axios": "^0.21.1",
     "dayjs": "^1.10.6",
     "electron": "^13.1.7",
     "electron-store": "^8.0.0",
-    "node-machine-id": "^1.1.12"
+    "laravel-mix": "^6.0.27",
+    "node-machine-id": "^1.1.12",
+    "postcss": "^8.3.6",
+    "tailwindcss": "^2.2.7"
   },
   "bugs": {
     "url": "https://github.com/unlock-sh/electron-license/issues"
   },
-  "description": ""
+  "description": "",
+  "dependencies": {
+    "electron-root-path": "^1.0.16"
+  }
 }
