@@ -31,9 +31,7 @@
     "dayjs": "^1.10.6",
     "electron": "^13.1.7",
     "electron-store": "^8.0.0",
-    "fs": "*",
-    "node-machine-id": "^1.1.12",
-    "path": "^0.12.7"
+    "node-machine-id": "^1.1.12"
   },
   "bugs": {
     "url": "https://github.com/unlock-sh/electron-license/issues"
