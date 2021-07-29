@@ -62,10 +62,10 @@ window.Unlock = () => {
 
             this.logo = data.logo;
 
-            if(this.api.fingerprint === true) {
+            if(this.license.fingerprint === true) {
                 ipcRenderer.send('get-device-fingerprint');
                 ipcRenderer.on('set-device-fingerprint', (event, arg) => {
-                    this.api.fingerprint = arg;
+                    this.license.fingerprint = arg;
                 });
             }
 
@@ -92,8 +92,8 @@ window.Unlock = () => {
                 })
             }
 
-            if(this.api.fingerprint) {
-                data.fingerprint = this.api.fingerprint;
+            if(this.license.fingerprint) {
+                data.fingerprint = this.license.fingerprint;
             }
 
             axios.post(`${this.api.url}/products/${this.api.productId}/licenses/activate-key`, data,

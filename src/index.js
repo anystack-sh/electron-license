@@ -5,7 +5,7 @@ const {machineIdSync} = require('node-machine-id');
 const Store = require('electron-store');
 const dayjs = require('dayjs');
 const axios = require('axios');
-const rootPath = require('electron-root-path').rootPath;
+const path = require('path');
 
 module.exports = class Unlock {
     constructor(mainWindow, config, autoUpdater) {
@@ -19,7 +19,7 @@ module.exports = class Unlock {
         this.store = new Store({name: 'unlock', encryptionKey: this.config.api.productId});
         this.autoUpdater = autoUpdater;
 
-        if (this.config.fingerprint) {
+        if (this.config.license.fingerprint) {
             this.handleFingerprint()
         }
 
@@ -49,11 +49,27 @@ module.exports = class Unlock {
             webPreferences: {
                 nodeIntegration: true,
                 contextIsolation: false,
+                webSecurity: false,
             }
         });
 
-        // licenseWindow.loadFile(`${app.getAppPath()}../node_modules/@unlocksh/unlock-electron-license/src/app.html`, {query: {"data": JSON.stringify(this.config)}});
-        licenseWindow.loadFile(path.join(rootPath, 'node_modules/@unlocksh/unlock-electron-license/src/app.html'), {query: {"data": JSON.stringify(this.config)}});
+        // console.log(__dirname, __filename);
+        // console.log(require('electron').app.getAppPath());
+        // console.log(require("path").dirname(require('electron').app.getPath("exe")));
+
+        // console.log(path.resolve(`${rootPath()}/node_modules/@unlocksh/unlock-electron-license/src/app.html`));
+        // licenseWindow.loadFile(`${app.getAppPath()}/node_modules/@unlocksh/unlock-electron-license/src/app.html`, {query: {"data": JSON.stringify(this.config)}});
+        // console.log(app.getAppPath());
+        // console.log(path.relative(__dirname, app.getAppPath()));
+
+
+        if (process.env.NODE_ENV === 'development') {
+            let offset = (__dirname.includes('.webpack')) ? '../../' : '../';
+            licenseWindow.loadFile(path.resolve(__dirname, offset + 'node_modules/@unlocksh/unlock-electron-license/dist/license.html'), {query: {"data": JSON.stringify(this.config)}});
+        } else {
+            let p = process.resourcesPath + '/dist/license.html';
+            licenseWindow.loadFile(p, {query: {"data": JSON.stringify(this.config)}});
+        }
 
         // Open the DevTools.
         // licenseWindow.webContents.openDevTools();
@@ -123,10 +139,14 @@ module.exports = class Unlock {
     }
 
     registerAutoUpdater() {
-        const licenseKey = this.store.has('license.key');
+        const licenseKey = this.store.get('license.key');
         const updaterType = (typeof this.autoUpdater.checkForUpdatesAndNotify === "function") ? 'electron-builder' : 'electron-native';
 
-        if (updaterType === 'electron-native') {
+        if (!licenseKey) {
+            return;
+        }
+
+        if (updaterType === 'electron-builder') {
             this.autoUpdater.setFeedURL({
                 url: this.config.updater.url + '/' + this.config.api.productId + '/releases?key=' + licenseKey,
                 serverType: 'json',
@@ -136,12 +156,12 @@ module.exports = class Unlock {
 
             setInterval(() => {
                 console.log('checking for updates');
-                this.autoUpdater.checkForUpdates();
+                this.autoUpdater.checkForUpdatesAndNotify();
             }, 30000);
         }
-        if (updaterType === 'electron-builder') {
+        if (updaterType === 'electron-native') {
             this.autoUpdater.setFeedURL({
-                url: this.config.updater.url + '/' + this.config.api.productId + '/update/' + process.platform + '/' + app.getVersion() + '?key=' + licenseKey,
+                url: this.config.updater.url + '/' + this.config.api.productId + '/update/' + process.platform + '/' + process.arch + '/' + app.getVersion() + '?key=' + licenseKey,
                 serverType: 'json',
                 provider: "generic",
                 useMultipleRangeRequest: false
@@ -149,7 +169,7 @@ module.exports = class Unlock {
 
             setInterval(() => {
                 console.log('checking for updates');
-                this.autoUpdater.checkForUpdatesAndNotify();
+                this.autoUpdater.checkForUpdates();
             }, 30000);
         }
     }

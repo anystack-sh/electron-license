@@ -34,8 +34,5 @@
   "bugs": {
     "url": "https://github.com/unlock-sh/electron-license/issues"
   },
-  "description": "",
-  "dependencies": {
-    "electron-root-path": "^1.0.16"
-  }
+  "description": ""
 }
