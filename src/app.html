@@ -9,92 +9,104 @@
     <script src="../dist/app.js" defer></script>
   </head>
   <body class="bg-white font-sans antialiased">
-
-<div x-data="Unlock" class="min-h-screen flex flex-col justify-center py-12 px-6 lg:px-8">
-    <div class="mx-auto w-full max-w-md">
-      <img class="mx-auto h-12 w-auto" :src="prompt.logo" alt="Workflow">
-      <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900" x-text="prompt.title"></h2>
-      <p class="mt-2 text-center text-sm text-gray-600" x-text="prompt.subtitle"></p>
-    </div>
-  
-    <div class="mt-8 mx-auto w-full max-w-md">
-        <form class="space-y-6 px-6" @submit.prevent="activateLicense">
-          <div>
-            <label for="email" class="block text-sm font-medium text-gray-700">
-              Email address
-            </label>
-            <div class="mt-1">
-              <input id="email" x-model="email" type="email" autocomplete="email" placeholder="elon@tesla.com" required class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-black focus:border-black text-sm">
-            </div>
-          </div>
-  
-          <div>
-            <label for="license-key" class="block text-sm font-medium text-gray-700">
-              License Key
-            </label>
-            <div class="mt-1 relative rounded-md shadow-sm">
-              <input id="license-key" :class="{ 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500': error !== null, 'border-gray-300 placeholder-gray-400 focus:ring-black focus:border-black': !error }" x-model="licenseKey" type="password" placeholder="8d49eddf-a282-4b7f-8a65-b64baa082dcf" required class="appearance-none block w-full px-3 py-2 border rounded-md focus:outline-none text-sm">
-              <div x-show="error" class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                <svg class="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                </svg>
-              </div>
-            </div>
-            <p x-show="error" class="mt-2 text-sm text-red-600" x-text="error"></p>
-          </div>
-  
-          <div>
-            <button type="submit" :class="{ 'bg-gray-800 text-gray-100': loading, 'bg-black text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black': !loading }" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium hover:shadow-lg">
-                <svg x-show="loading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+<div x-data="Unlock" class="min-h-screen flex flex-col justify-center px-6 lg:px-8">
+    <div class="cursor-move h-10 w-full absolute left-0 top-0" style="-webkit-app-region: drag;"></div>
+    <div x-show="!isReady" class="fixed left-0 flex h-full justify-center align-middle items-center min-h-screen w-full bg-white z-10">
+        <div>
+            <svg class="animate-spin h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span x-show="!loading">Activate license</span>
-            </button>
-          </div>
-        </form>
+            </svg>
+        </div>
     </div>
 
-<div x-show="activated" class="fixed z-10 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-    <div class="flex items-center justify-center min-h-screen pt-4 px-4 text-center">
+    <div x-show="isReady" x-cloak x-transition:enter="duration-300 ease-out"
+    x-transition:leave="duration-200 ease-in"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0">
+        <div class="mx-auto w-full max-w-md">
+        <img class="mx-auto h-12 w-auto" :src="prompt.logo" alt="">
+        <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900" x-text="prompt.title"></h2>
+        <p class="mt-2 text-center text-sm text-gray-600" x-text="prompt.subtitle"></p>
+        </div>
+    
+        <div class="mt-8 mx-auto w-full max-w-md">
+            <form class="space-y-6 px-6" @submit.prevent="activateLicense">
+            <div x-show="license.requireEmail">
+                <label for="email" class="block text-sm font-medium text-gray-700" x-text="prompt.email"></label>
+                <div class="mt-1 relative rounded-md shadow-sm">
+                    <input id="email" :class="{ 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500':( emailError !== null || licenseError !== null), 'border-gray-300 placeholder-gray-400 focus:ring-black focus:border-black': !emailError }" x-model="email" type="email" autocomplete="email" placeholder="elon@tesla.com" required class="appearance-none block w-full px-3 py-2 border rounded-md focus:outline-none text-sm">
+                    <div x-show="( emailError || licenseError)" class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+    
+            <div>
+                <label for="license-key" class="block text-sm font-medium text-gray-700" x-text="prompt.licenseKey"></label>
+                <div class="mt-1 relative rounded-md shadow-sm">
+                    <input id="license-key" :class="{ 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500': licenseError !== null, 'border-gray-300 placeholder-gray-400 focus:ring-black focus:border-black': !licenseError }" x-model="licenseKey" type="password" placeholder="8d49eddf-a282-4b7f-8a65-b64baa082dcf" required class="appearance-none block w-full px-3 py-2 border rounded-md focus:outline-none text-sm">
+                    <div x-show="licenseError" class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                </div>
+                <p x-show="licenseError" class="mt-2 text-xs text-red-600" x-text="licenseError"></p>
+            </div>
+    
+            <div>
+                <button type="submit" :class="{ 'bg-gray-800 text-gray-100': loading, 'bg-black text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black': !loading }" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium hover:shadow-lg">
+                    <svg x-show="loading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span x-show="!loading" x-text="prompt.activateLicense"></span>
+                </button>
+            </div>
+            </form>
+        </div>
 
-      <div x-show="activated" class="fixed inset-0 bg-white transition-opacity" aria-hidden="true" 
-      x-transition:enter="duration-300 ease-out"
-      x-transition:leave="duration-200 ease-in"
-      x-transition:enter-start="opacity-0"
-      x-transition:enter-end="opacity-100"
-      x-transition:leave-start="opacity-100"
-      x-transition:leave-end="opacity-0"></div>
-  
-
-      <div x-show="activated" class="inline-block rounded-lg px-4 text-left overflow-hidden transform transition-all align-middle w-full p-6"
-      x-transition:enter="duration-300 ease-out"
-      x-transition:leave="duration-200 ease-in"
-      x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-      x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
-      x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
-      x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
-        <div>
-          <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
-            <svg class="h-6 w-6 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <div class="mt-3 text-center sm:mt-5">
-            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title" x-text="confirmation.title"></h3>
-            <div class="mt-2">
-              <p class="text-sm text-gray-500" x-text="confirmation.subtitle"></p>
+        <div x-show="activated" class="fixed z-10 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div class="flex items-center justify-center min-h-screen pt-4 px-4 text-center">
+        
+              <div x-show="activated" class="fixed inset-0 bg-white transition-opacity" aria-hidden="true" 
+              x-transition:enter="duration-300 ease-out"
+              x-transition:leave="duration-200 ease-in"
+              x-transition:enter-start="opacity-0"
+              x-transition:enter-end="opacity-100"
+              x-transition:leave-start="opacity-100"
+              x-transition:leave-end="opacity-0"></div>
+          
+        
+              <div x-show="activated" class="inline-block rounded-lg px-4 text-left overflow-hidden transform transition-all align-middle w-full p-6"
+              x-transition:enter="duration-300 ease-out"
+              x-transition:leave="duration-200 ease-in"
+              x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+              x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+              x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+              x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
+                <div>
+                  <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+                    <svg class="h-6 w-6 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <div class="mt-3 text-center sm:mt-5">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title" x-text="confirmation.title"></h3>
+                    <div class="mt-2">
+                      <p class="text-sm text-gray-500" x-text="confirmation.subtitle"></p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="mt-5 sm:mt-6">
-          <button @click="openApplication" type="button" class="inline-flex justify-center w-full rounded-md border border-transparent shadow-sm px-4 py-2 bg-black focus:ring-black font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 text-sm" x-text="confirmation.action">
-            Open Artisan Remote
-          </button>
-        </div>
-      </div>
     </div>
-  </div>
   
   </div>
   </body>
