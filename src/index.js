@@ -1,26 +1,35 @@
 'use strict';
 
-const {BrowserWindow, ipcMain} = require('electron');
+const {app, dialog, BrowserWindow, ipcMain} = require('electron');
 const {machineIdSync} = require('node-machine-id');
 const Store = require('electron-store');
 const dayjs = require('dayjs');
 const axios = require('axios');
 
 module.exports = class Unlock {
-    constructor(config) {
-        this.config = config;
-        this.store = new Store({ name: 'unlock', encryptionKey: this.config.api.productId });
+    constructor(config, autoUpdater) {
+        this.config = Object.assign({
+            updater: {
+                url: 'https://dist.unlock.sh/v1/electron',
+                type: 'electron-native'
+            }
+        }, config);
+        this.store = new Store({name: 'unlock', encryptionKey: this.config.api.productId});
+        this.autoUpdater = autoUpdater;
 
         if (this.config.fingerprint) {
             this.handleFingerprint()
+        }
+
+        if (this.autoUpdater) {
+            this.registerAutoUpdater();
         }
     }
 
     hasActiveLicense() {
         if (this.store.has('license')) {
-
-            this.hasValidLicense();
-            if(this.checkinRequired()) {
+            if (this.checkinRequired()) {
+                this.hasValidLicense();
             }
 
             return true;
@@ -30,7 +39,6 @@ module.exports = class Unlock {
     }
 
     promptLicenseWindow() {
-        // Create the browser window.
         const licenseWindow = new BrowserWindow({
             width: 400,
             height: 450,
@@ -42,7 +50,6 @@ module.exports = class Unlock {
             }
         });
 
-        // and load the index.html of the app.
         licenseWindow.loadFile(`${__dirname}/../../node_modules/unlock-electron-license/src/app.html`, {query: {"data": JSON.stringify(this.config)}});
 
         // Open the DevTools.
@@ -82,18 +89,64 @@ module.exports = class Unlock {
             })
             .then((response) => {
                 const valid = response.data.meta.valid;
+                const status = response.data.meta.status;
 
-                if(valid === false) {
+                if (valid === false) {
                     this.store.delete('license');
-                }
 
-                console.log('success', response);
+                    let messages = {
+                        SUSPENDED: 'You license has been suspended.',
+                        EXPIRED: 'You license has been expired.',
+                        FINGERPRINT_INVALID: 'Your device identifier was not recognized.',
+                        FINGERPRINT_MISSING: 'Your device identifier is missing.',
+                    }
+
+                    dialog.showMessageBox(null, {
+                        title: 'Your license is invalid',
+                        buttons: ['Continue'],
+                        type: 'warning',
+                        message: messages[status],
+                    });
+
+                    app.relaunch();
+                    app.exit();
+                }
             })
             .catch((error) => {
-                console.log('fail', error);
             })
             .then(() => {
             });
+    }
+
+    registerAutoUpdater() {
+        const licenseKey = this.store.has('license.key');
+
+        if (this.config.updater.type === 'electron-native') {
+            this.autoUpdater.setFeedURL({
+                url: this.config.updater.url + '/' + this.config.api.productId + '/releases?key=' + licenseKey,
+                serverType: 'json',
+                provider: "generic",
+                useMultipleRangeRequest: false
+            });
+
+            setInterval(() => {
+                console.log('checking for updates');
+                this.autoUpdater.checkForUpdates();
+            }, 30000);
+        }
+        if (this.config.updater.type === 'electron-builder') {
+            this.autoUpdater.setFeedURL({
+                url: this.config.updater.url + '/' + this.config.api.productId + '/update/' + process.platform + '/' + app.getVersion() + '?key=' + licenseKey,
+                serverType: 'json',
+                provider: "generic",
+                useMultipleRangeRequest: false
+            });
+
+            setInterval(() => {
+                console.log('checking for updates');
+                this.autoUpdater.checkForUpdatesAndNotify();
+            }, 30000);
+        }
     }
 
     handleFingerprint() {
