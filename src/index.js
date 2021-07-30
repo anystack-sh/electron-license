@@ -11,33 +11,44 @@ const _ = require('lodash');
 module.exports = class Unlock {
     constructor(mainWindow, config, autoUpdater) {
         this.mainWindow = mainWindow;
+        this.config = this.buildConfig(config);
+        this.store = new Store({name: 'unlock', encryptionKey: this.config.api.productId});
+        this.autoUpdater = autoUpdater;
 
-        this.config = _.merge({
+        this.licenseKey = this.store.get('license.key', false);
+        this.fingerprint = null;
+
+        this.registerHandlers();
+    }
+
+    buildConfig(config) {
+        return _.merge({
             api: {
                 url: 'https://api.unlock.sh/v1',
                 productVersion: app.getVersion(),
             },
             updater: {
-                url: 'https://dist.unlock.sh/v1/electron'
+                url: 'https://dist.unlock.sh/v1/electron',
             }
         }, config);
+    }
 
-        this.store = new Store({name: 'unlock', encryptionKey: this.config.api.productId});
-        this.autoUpdater = autoUpdater;
-
+    registerHandlers() {
         if (this.config.license.fingerprint) {
-            this.handleFingerprint()
+            this.registerFingerprint()
         }
 
         if (this.autoUpdater) {
             this.registerAutoUpdater();
         }
+
+        this.registerRendererHandlers();
     }
 
     app() {
-        if (this.store.has('license')) {
+        if (this.licenseExistsOnDevice()) {
             if (this.checkinRequired()) {
-                this.hasValidLicense();
+                this.verifyDeviceLicense();
             }
 
             return this.mainWindow.show();
@@ -85,52 +96,86 @@ module.exports = class Unlock {
     checkinRequired() {
         const lastCheckIn = this.store.get('license.lastCheckIn');
 
-        return dayjs().subtract(24, 'hours').isAfter(dayjs.unix(lastCheckIn));
+        console.log(dayjs().subtract(1, 'minutes').isAfter(dayjs.unix(lastCheckIn)));
+        return dayjs().subtract(1, 'minutes').isAfter(dayjs.unix(lastCheckIn));
+        // return dayjs().subtract(24, 'hours').isAfter(dayjs.unix(lastCheckIn));
     }
 
-    hasValidLicense() {
-        const licenseKey = this.store.get('license.key');
-        const fingerprint = this.store.get('license.fingerprint');
-        const data = {
-            key: licenseKey,
-            fingerprint: fingerprint
-        };
+    verifyDeviceLicense() {
+        this.validateLicense({
+            key: this.licenseKey,
+            fingerprint: this.fingerprint,
+            tag: app.getVersion(),
+        }).then((response) => {
+            const valid = response.data.meta.valid;
+            const status = response.data.meta.status;
 
-        axios.post(`${this.config.api.url}/products/${this.config.api.productId}/licenses/validate-key`, data,
-            {
+            if (valid === false) {
+                this.invalidateDeviceLicenseAndNotify(status);
+            }
+        })
+        .catch((error) => {
+            dialog.showMessageBox(null, {
+                title: 'An unexpected error occurred',
+                buttons: ['Continue'],
+                type: 'warning',
+                message: error.response.data,
+            });
+        })
+        .then(() => {
+        });
+    }
+
+    invalidateDeviceLicenseAndNotify(status) {
+        this.store.delete('license');
+
+        let messages = {
+            SUSPENDED: 'You license has been suspended.',
+            EXPIRED: 'You license has been expired.',
+            FINGERPRINT_INVALID: 'Your device identifier was not recognized.',
+            FINGERPRINT_MISSING: 'Your device identifier is missing.',
+            RELEASE_CONSTRAINT: 'You license does not have access this application version.',
+        }
+
+        dialog.showMessageBox(null, {
+            title: 'Your license is invalid',
+            buttons: ['Continue'],
+            type: 'warning',
+            message: messages[status],
+        });
+
+        app.relaunch();
+        app.exit();
+    }
+
+    licenseExistsOnDevice() {
+        return this.store.has('license');
+    }
+
+    validateLicense(data) {
+        return this.doRequest('validate-key', data);
+    }
+
+    registerRendererHandlers() {
+        // ipcMain.on('attempt-license-activation', (event, arg) => {
+        //     event.reply('set-device-fingerprint', this.fingerprint)
+        // })
+    }
+
+    registerFingerprint() {
+        this.fingerprint = machineIdSync();
+
+        ipcMain.on('get-device-fingerprint', (event, arg) => {
+            event.reply('set-device-fingerprint', this.fingerprint)
+        })
+    }
+
+    doRequest(endpoint, data) {
+        return axios.post(
+            `${this.config.api.url}/products/${this.config.api.productId}/licenses/${endpoint}`, data, {
                 headers: {
                     'Authorization': `Bearer ${this.config.api.key}`
                 }
-            })
-            .then((response) => {
-                const valid = response.data.meta.valid;
-                const status = response.data.meta.status;
-
-                if (valid === false) {
-                    this.store.delete('license');
-
-                    let messages = {
-                        SUSPENDED: 'You license has been suspended.',
-                        EXPIRED: 'You license has been expired.',
-                        FINGERPRINT_INVALID: 'Your device identifier was not recognized.',
-                        FINGERPRINT_MISSING: 'Your device identifier is missing.',
-                        RELEASE_CONSTRAINT: 'You license does not have access this application version.',
-                    }
-
-                    dialog.showMessageBox(null, {
-                        title: 'Your license is invalid',
-                        buttons: ['Continue'],
-                        type: 'warning',
-                        message: messages[status],
-                    });
-
-                    app.relaunch();
-                    app.exit();
-                }
-            })
-            .catch((error) => {
-            })
-            .then(() => {
             });
     }
 
@@ -151,7 +196,6 @@ module.exports = class Unlock {
             });
 
             setInterval(() => {
-                console.log('checking for updates');
                 this.autoUpdater.checkForUpdatesAndNotify();
             }, 300000);
         }
@@ -164,15 +208,8 @@ module.exports = class Unlock {
             });
 
             setInterval(() => {
-                console.log('checking for updates');
                 this.autoUpdater.checkForUpdates();
             }, 300000);
         }
-    }
-
-    handleFingerprint() {
-        ipcMain.on('get-device-fingerprint', (event, arg) => {
-            event.reply('set-device-fingerprint', machineIdSync())
-        })
     }
 }
