@@ -6,16 +6,22 @@ const Store = require('electron-store');
 const dayjs = require('dayjs');
 const axios = require('axios');
 const path = require('path');
+const _ = require('lodash');
 
 module.exports = class Unlock {
     constructor(mainWindow, config, autoUpdater) {
         this.mainWindow = mainWindow;
 
-        this.config = Object.assign({
+        this.config = _.merge({
+            api: {
+                url: 'https://api.unlock.sh/v1',
+                productVersion: app.getVersion(),
+            },
             updater: {
                 url: 'https://dist.unlock.sh/v1/electron'
             }
         }, config);
+
         this.store = new Store({name: 'unlock', encryptionKey: this.config.api.productId});
         this.autoUpdater = autoUpdater;
 
@@ -53,22 +59,11 @@ module.exports = class Unlock {
             }
         });
 
-        // console.log(__dirname, __filename);
-        // console.log(require('electron').app.getAppPath());
-        // console.log(require("path").dirname(require('electron').app.getPath("exe")));
-
-        // console.log(path.resolve(`${rootPath()}/node_modules/@unlocksh/unlock-electron-license/src/app.html`));
-        // licenseWindow.loadFile(`${app.getAppPath()}/node_modules/@unlocksh/unlock-electron-license/src/app.html`, {query: {"data": JSON.stringify(this.config)}});
-        // console.log(app.getAppPath());
-        // console.log(path.relative(__dirname, app.getAppPath()));
-
-
         if (process.env.NODE_ENV === 'development') {
             let offset = (__dirname.includes('.webpack')) ? '../../' : '../';
             licenseWindow.loadFile(path.resolve(__dirname, offset + 'node_modules/@unlocksh/unlock-electron-license/dist/license.html'), {query: {"data": JSON.stringify(this.config)}});
         } else {
-            let p = process.resourcesPath + '/dist/license.html';
-            licenseWindow.loadFile(p, {query: {"data": JSON.stringify(this.config)}});
+            licenseWindow.loadFile(process.resourcesPath + '/dist/license.html', {query: {"data": JSON.stringify(this.config)}});
         }
 
         // Open the DevTools.
@@ -119,6 +114,7 @@ module.exports = class Unlock {
                         EXPIRED: 'You license has been expired.',
                         FINGERPRINT_INVALID: 'Your device identifier was not recognized.',
                         FINGERPRINT_MISSING: 'Your device identifier is missing.',
+                        RELEASE_CONSTRAINT: 'You license does not have access this application version.',
                     }
 
                     dialog.showMessageBox(null, {
@@ -157,7 +153,7 @@ module.exports = class Unlock {
             setInterval(() => {
                 console.log('checking for updates');
                 this.autoUpdater.checkForUpdatesAndNotify();
-            }, 30000);
+            }, 300000);
         }
         if (updaterType === 'electron-native') {
             this.autoUpdater.setFeedURL({
@@ -170,7 +166,7 @@ module.exports = class Unlock {
             setInterval(() => {
                 console.log('checking for updates');
                 this.autoUpdater.checkForUpdates();
-            }, 30000);
+            }, 300000);
         }
     }
 

@@ -2,6 +2,7 @@ import Alpine from 'alpinejs';
 
 const { ipcRenderer } = require('electron');
 const axios = require('axios');
+const _ = require('lodash');
 
 window.Unlock = () => {    
 
@@ -22,6 +23,7 @@ window.Unlock = () => {
                 'FINGERPRINT_MISSING': 'Device fingerprint is missing.',
                 'FINGERPRINT_ALREADY_EXISTS': 'An active license already exist for this device.',
                 'MAX_USAGE_REACHED': 'Your license has reached it\'s activation limit.',
+                'RELEASE_CONSTRAINT': 'Your license has no access to this version.',
             }
         },
         
@@ -33,7 +35,6 @@ window.Unlock = () => {
         api: {
             productId: null,
             key: null,
-            url: 'https://api.unlock.sh/v1',
         },
 
         license: {
@@ -55,10 +56,10 @@ window.Unlock = () => {
             const params = new URLSearchParams(global.location.search);
             const data = JSON.parse(params.get('data'));
 
-            Object.assign(this.prompt, data.prompt ?? {});
-            Object.assign(this.confirmation, data.confirmation ?? {});
-            Object.assign(this.api, data.api ?? {});
-            Object.assign(this.license, data.license ?? {});
+            this.prompt = _.merge(this.prompt, data.prompt ?? {});
+            this.confirmation = _.merge(this.confirmation, data.confirmation ?? {});
+            this.api = _.merge(this.api, data.api ?? {});
+            this.license = _.merge(this.license, data.license ?? {});
 
             this.logo = data.logo;
 
@@ -79,7 +80,8 @@ window.Unlock = () => {
             this.error = null;
 
             let data = {
-                key: this.licenseKey
+                key: this.licenseKey,
+                tag: this.api.productVersion
             };
 
             if(this.license.requireEmail) {
@@ -122,7 +124,6 @@ window.Unlock = () => {
                 }
             })
             .then(() => {
-                
             });
         }
     }
