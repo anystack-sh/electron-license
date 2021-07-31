@@ -1,11 +1,7 @@
 import Alpine from 'alpinejs';
-
 const { ipcRenderer } = require('electron');
-const axios = require('axios');
-const _ = require('lodash');
 
 window.Unlock = () => {    
-
     return {
         isReady: false,
         loading: false,
@@ -19,11 +15,10 @@ window.Unlock = () => {
             const params = new URLSearchParams(global.location.search);
             const data = JSON.parse(params.get('data'));
 
-            this.prompt = _.merge(this.prompt, data.prompt ?? {});
-            this.confirmation = _.merge(this.confirmation, data.confirmation ?? {});
-            this.api = _.merge(this.api, data.api ?? {});
-            this.license = _.merge(this.license, data.license ?? {});
-
+            this.prompt = data.prompt ?? {};
+            this.confirmation = data.confirmation ?? {};
+            this.api = data.api ?? {};
+            this.license = data.license ?? {};
             this.logo = data.logo;
 
             if(this.license.fingerprint === true) {
@@ -36,6 +31,7 @@ window.Unlock = () => {
             ipcRenderer.on('license-activation-failed', (event, arg) => {
                 this.loading = false;
                 this.licenseError = arg.licenseError;
+                this.emailError = arg.emailError;
             });
 
             ipcRenderer.on('license-activated', (event, arg) => {
@@ -51,12 +47,12 @@ window.Unlock = () => {
 
         activateLicense() {
             this.loading = true;
-            this.error = null;
+            this.emailError = null;
+            this.licenseError = null;
 
             ipcRenderer.send('attempt-license-activation', { licenseKey: this.licenseKey, email: this.email });
         }
     }
-
 }
 
 Alpine.start();

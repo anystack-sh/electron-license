@@ -12,12 +12,9 @@ module.exports = class Unlock {
     constructor(config, autoUpdater) {
         this.mainWindow = null;
         this.licenseWindow = null;
-        this.config = this.buildConfig(config);
-        this.store = new Store({name: 'unlock', encryptionKey: this.config.api.productId});
         this.autoUpdater = autoUpdater;
-
-        this.licenseKey = this.store.get('license.key', false);
-        this.fingerprint = null;
+        this.config = this.buildConfig(config);
+        this.store = new Store({name: 'unlock', clearInvalidConfig: true, encryptionKey: this.config.license.encryptionKey});
 
         this.registerHandlers();
     }
@@ -26,12 +23,14 @@ module.exports = class Unlock {
         return _.merge({
             api: {
                 url: 'https://api.unlock.sh/v1',
-                productId: null,
-                key: null,
             },
             license: {
-                fingerprint: false,
                 requireEmail: false,
+                checkin: {
+                    value: 24,
+                    unit: 'hours'
+                },
+                encryptionKey: config.api.productId,
             },
             updater: {
                 url: 'https://dist.unlock.sh/v1/electron',
@@ -47,32 +46,29 @@ module.exports = class Unlock {
                     'NOT_FOUND': 'Your license information did not match our records.',
                     'SUSPENDED': 'Your license has been suspended.',
                     'EXPIRED': 'Your license has been expired.',
-                    'FINGERPRINT_MISSING': 'Device fingerprint is missing.',
+                    'FINGERPRINT_INVALID': 'No license found for this device.',
                     'FINGERPRINT_ALREADY_EXISTS': 'An active license already exist for this device.',
                     'MAX_USAGE_REACHED': 'Your license has reached it\'s activation limit.',
                     'RELEASE_CONSTRAINT': 'Your license has no access to this version.',
                 }
             },
             confirmation: {
-                title: 'License activated',
-                subtitle: 'Thank you for your support',
+                title: 'You are awesome!',
+                subtitle: 'Thank you for activating your product license.',
             }
         }, config);
     }
 
     registerHandlers() {
-        if (this.config.license.fingerprint) {
-            this.registerFingerprint()
-        }
-
         if (this.autoUpdater) {
             this.registerAutoUpdater();
         }
 
+        this.registerFingerprint();
         this.registerRendererHandlers();
     }
 
-    openWhenAuthorized  (mainWindow) {
+    ifAuthorized(mainWindow) {
         this.mainWindow = mainWindow;
 
         if (this.licenseExistsOnDevice()) {
@@ -114,41 +110,45 @@ module.exports = class Unlock {
     checkinRequired() {
         const lastCheckIn = this.store.get('license.lastCheckIn');
 
-        console.log(dayjs().subtract(1, 'minutes').isAfter(dayjs.unix(lastCheckIn)));
-        return dayjs().subtract(1, 'minutes').isAfter(dayjs.unix(lastCheckIn));
-        // return dayjs().subtract(24, 'hours').isAfter(dayjs.unix(lastCheckIn));
+        return dayjs().subtract(this.config.license.checkin.value, this.config.license.checkin.unit).isAfter(dayjs.unix(lastCheckIn));
     }
 
     verifyDeviceLicense() {
         this.validateLicense({
-            key: this.licenseKey,
+            key: this.store.get('license.key', false),
             fingerprint: this.fingerprint,
             tag: app.getVersion(),
         }).then((response) => {
             const valid = response.data.meta.valid;
             const status = response.data.meta.status;
 
+            if (valid === true) {
+                this.store.set('license.lastCheckIn', dayjs().unix());
+            }
+
             if (valid === false && status !== 'RESTRICTED') {
                 this.invalidateDeviceLicenseAndNotify(status);
             }
-        })
-        .catch((error) => {
-            let errorMessage;
+        }).catch((error) => {
+            this.showRequestErrorDialog(error);
+        }).then(() => {
+        });
+    }
 
-            if(error.response.status === 422) {
-                errorMessage = _.flatten(_.toArray(error.response.data.errors)).join(", ");
-            } else {
-                errorMessage = JSON.stringify(error.response);
-            }
+    showRequestErrorDialog(error) {
+        let errorMessage;
 
-            dialog.showMessageBox(null, {
-                title: 'An unexpected error occurred',
-                buttons: ['Continue'],
-                type: 'warning',
-                message: errorMessage,
-            });
-        })
-        .then(() => {
+        if (error.response.status === 422) {
+            errorMessage = _.flatten(_.toArray(error.response.data.errors)).join(", ");
+        } else {
+            errorMessage = JSON.stringify(error.response.data);
+        }
+
+        dialog.showMessageBox(null, {
+            title: 'An unexpected error occurred',
+            buttons: ['Continue'],
+            type: 'warning',
+            message: errorMessage,
         });
     }
 
@@ -174,35 +174,19 @@ module.exports = class Unlock {
         return this.doRequest('validate-key', data);
     }
 
+    activateLicense(data) {
+        return this.doRequest('activate-key', _.merge(data, {
+            platform: process.platform
+        }));
+    }
+
     registerRendererHandlers() {
         ipcMain.on('attempt-license-activation', (event, arg) => {
-            let data = {
-                key: arg.licenseKey,
-                tag: app.getVersion(),
-            };
-
-            if(this.config.license.requireEmail) {
-                data = Object.assign(data, {
-                    scope: {
-                        licensee: {
-                            email: arg.email,
-                        }
-                    }
-                })
-            }
-
-            if(this.config.license.fingerprint) {
-                data.fingerprint = this.fingerprint;
-            }
-
-            axios.post(`${this.config.api.url}/products/${this.config.api.productId}/licenses/activate-key`, data,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${this.config.api.key}`
-                    }
-                })
+            let data = this.getLicenseRequestData(arg.licenseKey, arg.email);
+            this.validateLicense(data)
                 .then((response) => {
-                    if(response.status === 201) {
+
+                    if (response.data.meta.valid === true || response.data.meta.status === 'RESTRICTED') {
                         event.reply('license-activated');
 
                         this.store.set('license', {
@@ -216,19 +200,63 @@ module.exports = class Unlock {
                             this.licenseWindow.close();
                             this.mainWindow.show();
                         }, 3000);
+                    } else {
+                        this.activateLicense(data)
+                            .then((response) => {
+                                if (response.status === 201) {
+                                    event.reply('license-activated');
+
+                                    this.store.set('license', {
+                                        key: data.licenseKey,
+                                        email: data.email,
+                                        fingerprint: this.fingerprint,
+                                        lastCheckIn: dayjs().unix()
+                                    });
+
+                                    setTimeout(() => {
+                                        this.licenseWindow.close();
+                                        this.mainWindow.show();
+                                    }, 3000);
+                                }
+                            })
+                            .catch((error) => {
+                                if (error.response.status === 422) {
+                                    event.reply('license-activation-failed', {
+                                        licenseError: this.config.prompt.errors[error.response.data.errors['license']],
+                                        emailError: error.response.data.errors['scope.licensee.email'],
+                                    });
+                                }
+                            })
+                            .then(() => {
+                            });
                     }
                 })
                 .catch((error) => {
-                    if(error.response.status === 422) {
-                        event.reply('license-activation-failed', {
-                            licenseError: this.config.prompt.errors[error.response.data.errors['license']],
-                            emailError: error.response.data.errors['scope.licensee.email'],
-                        });
-                    }
+                    this.showRequestErrorDialog(error);
                 })
                 .then(() => {
                 });
         })
+    }
+
+    getLicenseRequestData(licenseKey, email = null) {
+        let data = {
+            key: licenseKey,
+            tag: app.getVersion(),
+            fingerprint: this.fingerprint,
+        };
+
+        if (this.config.license.requireEmail) {
+            data = _.merge(data, {
+                scope: {
+                    licensee: {
+                        email: email,
+                    }
+                }
+            })
+        }
+
+        return data;
     }
 
     registerFingerprint() {
