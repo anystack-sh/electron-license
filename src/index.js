@@ -98,7 +98,7 @@ module.exports = class Unlock {
 
         if (process.env.NODE_ENV === 'development') {
             let offset = (__dirname.includes('.webpack')) ? '../../' : '../';
-            this.licenseWindow.loadFile(path.resolve(__dirname, offset + 'node_modules/@unlocksh/unlock-electron-license/dist/license.html'), {query: {"data": JSON.stringify(this.config)}});
+            this.licenseWindow.loadFile(path.resolve(__dirname, offset + 'node_modules/@unlocksh/electron-license/dist/license.html'), {query: {"data": JSON.stringify(this.config)}});
         } else {
             this.licenseWindow.loadFile(process.resourcesPath + '/dist/license.html', {query: {"data": JSON.stringify(this.config)}});
         }
