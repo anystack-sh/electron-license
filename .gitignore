@@ -1,3 +1,4 @@
-node_modules
-mix-manifest.json
+/node_modules
+/dist
 /.idea
+mix-manifest.json
