@@ -1,5 +1,5 @@
 {
-  "name": "@unlocksh/unlock-electron-license",
+  "name": "@unlocksh/electron-license",
   "version": "1.0.0",
   "main": "src/index.js",
   "scripts": {
@@ -35,5 +35,5 @@
   "bugs": {
     "url": "https://github.com/unlock-sh/electron-license/issues"
   },
-  "description": ""
+  "description": "Add license and auto-update to your Electron applications with Unlock."
 }
