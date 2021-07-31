@@ -9,6 +9,11 @@
     "type": "git",
     "url": "git+https://github.com/unlock-sh/electron-license.git"
   },
+  "files": [
+    "dist/license.css",
+    "dist/license.html",
+    "dist/license.js"
+  ],
   "keywords": [
     "electron",
     "license",
