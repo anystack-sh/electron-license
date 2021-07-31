@@ -5,9 +5,9 @@ window.Unlock = () => {
     return {
         isReady: false,
         loading: false,
-        email: 'john@snow.com',
+        email: null,
         emailError: null,
-        licenseKey: '8d562d27-43d4-4032-b988-4f697f17e487',
+        licenseKey: null,
         licenseError: null,
         activated: false,
 
