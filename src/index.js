@@ -34,39 +34,39 @@ module.exports = class Unlock {
     buildConfig(config) {
         return _.merge({
             api: {
-                url: 'https://api.unlock.sh/v1',
+                url: "https://api.unlock.sh/v1",
             },
             license: {
                 requireEmail: false,
                 checkIn: {
                     value: 24,
-                    unit: 'hours'
+                    unit: "hours"
                 },
                 encryptionKey: config.api.productId,
             },
             updater: {
-                url: 'https://dist.unlock.sh/v1/electron',
+                url: "https://dist.unlock.sh/v1/electron",
             },
             prompt: {
-                title: 'Unlock',
-                subtitle: 'Activate your license to get started',
-                logo: 'https://unlock.sh/img/unlock-logo-grey.svg',
-                email: 'Email address',
-                licenseKey: 'License key',
-                activateLicense: 'Activate license',
+                title: "Unlock",
+                subtitle: "Activate your license to get started",
+                logo: "https://unlock.sh/img/unlock-logo-grey.svg",
+                email: "Email address",
+                licenseKey: "License key",
+                activateLicense: "Activate license",
                 errors: {
-                    'NOT_FOUND': 'Your license information did not match our records.',
-                    'SUSPENDED': 'Your license has been suspended.',
-                    'EXPIRED': 'Your license has been expired.',
-                    'FINGERPRINT_INVALID': 'No license found for this device.',
-                    'FINGERPRINT_ALREADY_EXISTS': 'An active license already exist for this device.',
-                    'MAX_USAGE_REACHED': 'Your license has reached its activation limit.',
-                    'RELEASE_CONSTRAINT': 'Your license has no access to this version.',
+                    "NOT_FOUND": "Your license information did not match our records.",
+                    "SUSPENDED": "Your license has been suspended.",
+                    "EXPIRED": "Your license has been expired.",
+                    "FINGERPRINT_INVALID": "No license was found for this device.",
+                    "FINGERPRINT_ALREADY_EXISTS": "An active license already exists for this device.",
+                    "MAX_USAGE_REACHED": "Your license has reached its activation limit.",
+                    "RELEASE_CONSTRAINT": "Your license has no access to this version."
                 }
             },
             confirmation: {
-                title: 'You are awesome!',
-                subtitle: 'Thank you for activating your product license.',
+                title: "You are awesome!",
+                subtitle: "Thank you for activating your product license.",
             }
         }, config);
     }
