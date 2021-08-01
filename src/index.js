@@ -38,7 +38,7 @@ module.exports = class Unlock {
             },
             license: {
                 requireEmail: false,
-                checkin: {
+                checkIn: {
                     value: 24,
                     unit: 'hours'
                 },
@@ -129,7 +129,7 @@ module.exports = class Unlock {
     checkinRequired() {
         const lastCheckIn = this.store.get('license.lastCheckIn');
 
-        return dayjs().subtract(this.config.license.checkin.value, this.config.license.checkin.unit).isAfter(dayjs.unix(lastCheckIn));
+        return dayjs().subtract(this.config.license.checkIn.value, this.config.license.checkIn.unit).isAfter(dayjs.unix(lastCheckIn));
     }
 
     verifyDeviceLicense() {
