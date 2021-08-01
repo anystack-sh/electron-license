@@ -25,20 +25,23 @@
   "license": "MIT",
   "devDependencies": {
     "@tailwindcss/forms": "^0.3.3",
-    "alpinejs": "^3.2.2",
     "autoprefixer": "^10.3.1",
-    "axios": "^0.21.1",
-    "dayjs": "^1.10.6",
-    "electron": "^13.1.7",
-    "electron-store": "^8.0.0",
     "laravel-mix": "^6.0.27",
-    "node-machine-id": "^1.1.12",
     "postcss": "^8.3.6",
-    "tailwindcss": "^2.2.7",
-    "lodash": "^4.17.21"
+    "tailwindcss": "^2.2.7"
   },
   "bugs": {
     "url": "https://github.com/unlock-sh/electron-license/issues"
   },
-  "description": "Add license and auto-update to your Electron applications with Unlock."
+  "description": "Add license and auto-update to your Electron applications with Unlock.",
+  "dependencies": {
+    "alpinejs": "^3.2.2",
+    "lodash": "^4.17.21",
+    "node-machine-id": "^1.1.12",
+    "electron-log": "^4.4.1",
+    "electron": "^13.1.7",
+    "electron-store": "^8.0.0",
+    "axios": "^0.21.1",
+    "dayjs": "^1.10.6"
+  }
 }

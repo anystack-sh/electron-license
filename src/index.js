@@ -3,10 +3,18 @@
 const {app, dialog, BrowserWindow, ipcMain} = require('electron');
 const {machineIdSync} = require('node-machine-id');
 const Store = require('electron-store');
+const log = require('electron-log');
 const dayjs = require('dayjs');
 const axios = require('axios');
 const path = require('path');
 const _ = require('lodash');
+
+if (process.env.NODE_ENV === 'development') {
+    log.transports.file.level = false;
+} else {
+    log.transports.file.level = false;
+    log.transports.console.level = false;
+}
 
 module.exports = class Unlock {
     constructor(config, autoUpdater) {
@@ -14,7 +22,11 @@ module.exports = class Unlock {
         this.licenseWindow = null;
         this.autoUpdater = autoUpdater;
         this.config = this.buildConfig(config);
-        this.store = new Store({name: 'unlock', clearInvalidConfig: true, encryptionKey: this.config.license.encryptionKey});
+        this.store = new Store({
+            name: 'unlock',
+            clearInvalidConfig: true,
+            encryptionKey: this.config.license.encryptionKey
+        });
 
         this.registerHandlers();
     }
@@ -48,7 +60,7 @@ module.exports = class Unlock {
                     'EXPIRED': 'Your license has been expired.',
                     'FINGERPRINT_INVALID': 'No license found for this device.',
                     'FINGERPRINT_ALREADY_EXISTS': 'An active license already exist for this device.',
-                    'MAX_USAGE_REACHED': 'Your license has reached it\'s activation limit.',
+                    'MAX_USAGE_REACHED': 'Your license has reached its activation limit.',
                     'RELEASE_CONSTRAINT': 'Your license has no access to this version.',
                 }
             },
@@ -72,17 +84,24 @@ module.exports = class Unlock {
         this.mainWindow = mainWindow;
 
         if (this.licenseExistsOnDevice()) {
+            log.debug('A license exists on this device.');
+
             if (this.checkinRequired()) {
+                log.debug('A license check-in is required.');
                 this.verifyDeviceLicense();
             }
 
+            log.debug('Opening main application.');
             return this.mainWindow.show();
         }
 
+        log.debug('No license found on this device.');
         this.promptLicenseWindow();
     }
 
     promptLicenseWindow() {
+        log.debug('Prompting license window.');
+
         this.licenseWindow = new BrowserWindow({
             width: 400,
             height: 450,
@@ -92,7 +111,7 @@ module.exports = class Unlock {
                 nodeIntegration: true,
                 contextIsolation: false,
                 webSecurity: false,
-                devTools: false,
+                devTools: process.env.NODE_ENV === 'development',
             }
         });
 
@@ -116,22 +135,28 @@ module.exports = class Unlock {
     verifyDeviceLicense() {
         this.validateLicense({
             key: this.store.get('license.key', false),
-            fingerprint: this.fingerprint,
-            tag: app.getVersion(),
+            scope: {
+                fingerprint: this.fingerprint,
+                release: {
+                    tag: app.getVersion(),
+                }
+            }
         }).then((response) => {
             const valid = response.data.meta.valid;
             const status = response.data.meta.status;
 
             if (valid === true) {
+                log.debug('License check in complete and the device license is valid.');
                 this.store.set('license.lastCheckIn', dayjs().unix());
             }
 
             if (valid === false && status !== 'RESTRICTED') {
+                log.debug('License invalid: ' + status);
                 this.invalidateDeviceLicenseAndNotify(status);
             }
         }).catch((error) => {
+            log.debug('An error occurred during the license check.');
             this.showRequestErrorDialog(error);
-        }).then(() => {
         });
     }
 
@@ -182,17 +207,18 @@ module.exports = class Unlock {
 
     registerRendererHandlers() {
         ipcMain.on('attempt-license-activation', (event, arg) => {
-            let data = this.getLicenseRequestData(arg.licenseKey, arg.email);
+            let data = this.getLicenseValidationRequestData(arg.licenseKey, arg.email);
             this.validateLicense(data)
                 .then((response) => {
-
                     if (response.data.meta.valid === true || response.data.meta.status === 'RESTRICTED') {
+                        log.debug('Restoring existing device license.');
+
                         event.reply('license-activated');
 
                         this.store.set('license', {
                             key: arg.licenseKey,
                             email: arg.email,
-                            fingerprint: arg.fingerprint,
+                            fingerprint: this.fingerprint,
                             lastCheckIn: dayjs().unix()
                         });
 
@@ -200,15 +226,20 @@ module.exports = class Unlock {
                             this.licenseWindow.close();
                             this.mainWindow.show();
                         }, 3000);
-                    } else {
-                        this.activateLicense(data)
+                    } else if (response.data.meta.status === 'FINGERPRINT_INVALID') {
+                        log.debug('Attempting to activate license for this device.');
+                        this.activateLicense({
+                            key: arg.licenseKey,
+                            fingerprint: this.fingerprint,
+                        })
                             .then((response) => {
                                 if (response.status === 201) {
+                                    log.debug('License was activated successfully.');
                                     event.reply('license-activated');
 
                                     this.store.set('license', {
-                                        key: data.licenseKey,
-                                        email: data.email,
+                                        key: arg.licenseKey,
+                                        email: arg.email,
                                         fingerprint: this.fingerprint,
                                         lastCheckIn: dayjs().unix()
                                     });
@@ -220,15 +251,19 @@ module.exports = class Unlock {
                                 }
                             })
                             .catch((error) => {
+                                log.debug('License activation has failed.');
                                 if (error.response.status === 422) {
                                     event.reply('license-activation-failed', {
                                         licenseError: this.config.prompt.errors[error.response.data.errors['license']],
                                         emailError: error.response.data.errors['scope.licensee.email'],
                                     });
                                 }
-                            })
-                            .then(() => {
                             });
+                    } else {
+                        log.debug('License activation has failed.');
+                        event.reply('license-activation-failed', {
+                            licenseError: this.config.prompt.errors[response.data.meta.status],
+                        });
                     }
                 })
                 .catch((error) => {
@@ -239,11 +274,15 @@ module.exports = class Unlock {
         })
     }
 
-    getLicenseRequestData(licenseKey, email = null) {
+    getLicenseValidationRequestData(licenseKey, email = null) {
         let data = {
             key: licenseKey,
-            tag: app.getVersion(),
-            fingerprint: this.fingerprint,
+            scope: {
+                fingerprint: this.fingerprint,
+                release: {
+                    tag: app.getVersion(),
+                }
+            },
         };
 
         if (this.config.license.requireEmail) {
@@ -261,10 +300,7 @@ module.exports = class Unlock {
 
     registerFingerprint() {
         this.fingerprint = machineIdSync();
-
-        ipcMain.on('get-device-fingerprint', (event, arg) => {
-            event.reply('set-device-fingerprint', this.fingerprint)
-        })
+        log.debug('Device fingerprint registered: ' + this.fingerprint);
     }
 
     doRequest(endpoint, data) {
@@ -281,8 +317,11 @@ module.exports = class Unlock {
         const updaterType = (typeof this.autoUpdater.checkForUpdatesAndNotify === "function") ? 'electron-builder' : 'electron-native';
 
         if (!licenseKey) {
+            log.debug('Registration of auto updater failed because no license key is provided');
             return;
         }
+
+        log.debug('Registering auto updater for ' + updaterType);
 
         if (updaterType === 'electron-builder') {
             this.autoUpdater.setFeedURL({

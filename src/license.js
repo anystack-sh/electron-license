@@ -21,13 +21,6 @@ window.Unlock = () => {
             this.license = data.license ?? {};
             this.logo = data.logo;
 
-            if(this.license.fingerprint === true) {
-                ipcRenderer.send('get-device-fingerprint');
-                ipcRenderer.on('set-device-fingerprint', (event, arg) => {
-                    this.license.fingerprint = arg;
-                });
-            }
-
             ipcRenderer.on('license-activation-failed', (event, arg) => {
                 this.loading = false;
                 this.licenseError = arg.licenseError;
