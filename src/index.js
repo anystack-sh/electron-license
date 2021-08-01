@@ -156,6 +156,7 @@ module.exports = class Unlock {
             }
         }).catch((error) => {
             log.debug('An error occurred during the license check.');
+            log.debug(error.response.data);
             this.showRequestErrorDialog(error);
         });
     }
@@ -207,9 +208,12 @@ module.exports = class Unlock {
 
     registerRendererHandlers() {
         ipcMain.on('attempt-license-activation', (event, arg) => {
+            log.debug('Attempting license activation.');
             let data = this.getLicenseValidationRequestData(arg.licenseKey, arg.email);
             this.validateLicense(data)
                 .then((response) => {
+                    log.debug('Validate license request was made successfully.');
+
                     if (response.data.meta.valid === true || response.data.meta.status === 'RESTRICTED') {
                         log.debug('Restoring existing device license.');
 
@@ -267,9 +271,9 @@ module.exports = class Unlock {
                     }
                 })
                 .catch((error) => {
+                    log.debug('Validate license request resulted in an error.');
+                    log.debug(error.response.data);
                     this.showRequestErrorDialog(error);
-                })
-                .then(() => {
                 });
         })
     }
@@ -317,7 +321,7 @@ module.exports = class Unlock {
         const updaterType = (typeof this.autoUpdater.checkForUpdatesAndNotify === "function") ? 'electron-builder' : 'electron-native';
 
         if (!licenseKey) {
-            log.debug('Registration of auto updater failed because no license key is provided');
+            log.debug('Skipped registration of auto updater because no license key is provided.');
             return;
         }
 

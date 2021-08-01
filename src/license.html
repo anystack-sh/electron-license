@@ -24,10 +24,11 @@
 			</div>
 			<div class="mt-8 mx-auto w-full max-w-md">
 				<form class="space-y-6 px-6" @submit.prevent="activateLicense">
-					<div x-show="license.requireEmail">
+					<template  x-if="license.requireEmail">
+					<div>
 						<label for="email" class="block text-sm font-medium text-gray-700" x-text="prompt.email"></label>
 						<div class="mt-1 relative rounded-md shadow-sm">
-							<input id="email" :class="{ 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500':( emailError !== null || licenseError !== null), 'border-gray-300 placeholder-gray-400 focus:ring-black focus:border-black': !emailError }" x-model="email" type="email" autocomplete="email" placeholder="elon@tesla.com" required class="appearance-none block w-full px-3 py-2 border rounded-md focus:outline-none text-sm">
+							<input id="email" :class="{ 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500':( emailError !== null || licenseError !== null), 'border-gray-300 placeholder-gray-400 focus:ring-black focus:border-black': !emailError }" x-model="email" type="email" placeholder="elon@tesla.com" required class="appearance-none block w-full px-3 py-2 border rounded-md focus:outline-none text-sm">
 							<div x-show="( emailError || licenseError)" class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
 								<svg class="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 									<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
@@ -35,6 +36,7 @@
 							</div>
 						</div>
 					</div>
+					</template>
 					<div>
 						<label for="license-key" class="block text-sm font-medium text-gray-700" x-text="prompt.licenseKey"></label>
 						<div class="mt-1 relative rounded-md shadow-sm">
