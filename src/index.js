@@ -1,7 +1,7 @@
 'use strict';
 
-const {app, dialog, BrowserWindow, ipcMain} = require('electron');
-const {machineIdSync} = require('node-machine-id');
+const { app, dialog, BrowserWindow, ipcMain } = require('electron');
+const { machineIdSync } = require('node-machine-id');
 const Store = require('electron-store');
 const log = require('electron-log');
 const dayjs = require('dayjs');
@@ -116,10 +116,23 @@ module.exports = class Unlock {
         });
 
         if (process.env.NODE_ENV === 'development') {
-            let offset = (__dirname.includes('.webpack')) ? '../../' : '../';
-            this.licenseWindow.loadFile(path.resolve(__dirname, offset + 'node_modules/@unlocksh/electron-license/dist/license.html'), {query: {"data": JSON.stringify(this.config)}});
+            let prepend = '';
+
+            if (path.resolve(__dirname).includes('dist_electron') == true) {
+                prepend += '../'
+            }
+
+            if (path.resolve(__dirname).includes('@unlocksh/electron-license/src') == true) {
+                prepend += '../'
+            }
+
+            if (path.resolve(__dirname).includes('node_modules') == false) {
+                prepend += 'node_modules/@unlocksh/electron-license';
+            }
+
+            this.licenseWindow.loadFile(path.resolve(__dirname, prepend + '/license/license.html'), { query: { "data": JSON.stringify(this.config) } });
         } else {
-            this.licenseWindow.loadFile(process.resourcesPath + '/dist/license.html', {query: {"data": JSON.stringify(this.config)}});
+            this.licenseWindow.loadFile(process.resourcesPath + '/license/license.html', { query: { "data": JSON.stringify(this.config) } });
         }
 
         // Open the DevTools.
@@ -310,10 +323,10 @@ module.exports = class Unlock {
     doRequest(endpoint, data) {
         return axios.post(
             `${this.config.api.url}/products/${this.config.api.productId}/licenses/${endpoint}`, data, {
-                headers: {
-                    'Authorization': `Bearer ${this.config.api.key}`
-                }
-            });
+            headers: {
+                'Authorization': `Bearer ${this.config.api.key}`
+            }
+        });
     }
 
     registerAutoUpdater() {

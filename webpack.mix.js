@@ -4,9 +4,8 @@ mix.webpackConfig({
     target: 'electron-main'
 });
 
-mix.copy('src/license.html', 'dist');
-mix.js('src/license.js', 'dist');
-// mix.js('src/index.js', 'dist');
-mix.postCss("src/license.css", "dist", [
+mix.copy('src/license.html', 'license');
+mix.js('src/license.js', 'license');
+mix.postCss("src/license.css", "license", [
     require("tailwindcss"),
 ]);
