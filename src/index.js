@@ -122,7 +122,7 @@ module.exports = class Unlock {
                 prepend += '../'
             }
 
-            if (path.resolve(__dirname).includes('@unlocksh/electron-license/src') == true) {
+            if (path.resolve(__dirname).includes('@unlocksh') == true) {
                 prepend += '../'
             }
 
@@ -130,7 +130,11 @@ module.exports = class Unlock {
                 prepend += 'node_modules/@unlocksh/electron-license';
             }
 
-            this.licenseWindow.loadFile(path.resolve(__dirname, prepend + '/license/license.html'), { query: { "data": JSON.stringify(this.config) } });
+            if (process.platform === 'darwin') {
+                prepend += '/';
+            }
+
+            this.licenseWindow.loadFile(path.resolve(__dirname, prepend + 'license/license.html'), { query: { "data": JSON.stringify(this.config) } });
         } else {
             this.licenseWindow.loadFile(process.resourcesPath + '/license/license.html', { query: { "data": JSON.stringify(this.config) } });
         }
