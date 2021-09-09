@@ -8,6 +8,7 @@ const dayjs = require('dayjs');
 const axios = require('axios');
 const path = require('path');
 const _ = require('lodash');
+const os = require('os');
 
 if (process.env.NODE_ENV === 'development') {
     log.transports.file.level = false;
@@ -252,6 +253,7 @@ module.exports = class Unlock {
                         this.activateLicense({
                             key: arg.licenseKey,
                             fingerprint: this.fingerprint,
+                            name: os.hostname()
                         })
                             .then((response) => {
                                 if (response.status === 201) {
