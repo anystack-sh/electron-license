@@ -356,7 +356,7 @@ module.exports = class Unlock {
 
             setInterval(() => {
                 this.autoUpdater.checkForUpdatesAndNotify();
-            }, 300000);
+            }, 1800000);
         }
         if (updaterType === 'electron-native') {
             this.autoUpdater.setFeedURL({
@@ -368,7 +368,10 @@ module.exports = class Unlock {
 
             setInterval(() => {
                 this.autoUpdater.checkForUpdates();
-            }, 300000);
+            }, 1800000);
         }
+
+        log.debug('Checking for inital updates');
+        this.autoUpdater.checkForUpdatesAndNotify();
     }
 }
