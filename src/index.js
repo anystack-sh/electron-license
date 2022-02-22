@@ -371,10 +371,10 @@ module.exports = class Unlock {
     }
 
     registerAutoUpdater() {
-        const licenseKey = this.store.get('license.key');
+        const licenseKey = this.store.get('license.key', '');
         const updaterType = (typeof this.autoUpdater.checkForUpdatesAndNotify === "function") ? 'electron-builder' : 'electron-native';
 
-        if (!licenseKey) {
+        if (!licenseKey && this.config.license.trial.enabled == false) {
             log.debug('Skipped registration of auto updater because no license key is provided.');
             return;
         }
