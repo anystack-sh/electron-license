@@ -44,6 +44,11 @@ module.exports = class Unlock {
                     unit: "hours"
                 },
                 encryptionKey: config.api.productId,
+                trial: {
+                    enabled: false,
+                    value: 7,
+                    unit: "days",
+                },
             },
             updater: {
                 url: "https://dist.unlock.sh/v1/electron",
@@ -55,6 +60,8 @@ module.exports = class Unlock {
                 email: "Email address",
                 licenseKey: "License key",
                 activateLicense: "Activate license",
+                trial: "Try Unlock for 7 days",
+                trialExpired: "Thank you for trying Unlock. Your trial has expired; to continue, please purchase a license.",
                 errors: {
                     "NOT_FOUND": "Your license information did not match our records.",
                     "SUSPENDED": "Your license has been suspended.",
@@ -105,7 +112,7 @@ module.exports = class Unlock {
 
         this.licenseWindow = new BrowserWindow({
             width: 400,
-            height: 450,
+            height: 480,
             resizable: false,
             frame: false,
             webPreferences: {
@@ -295,6 +302,28 @@ module.exports = class Unlock {
                     this.showRequestErrorDialog(error);
                 });
         })
+
+        ipcMain.on('attempt-trial-run', (event, arg) => {
+            if (this.store.has('trial.start') == false) {
+                log.debug('Starting trial');
+
+                this.store.set('trial', {
+                    start: dayjs().unix()
+                });
+            }
+
+            if (this.trialExpired()) {
+                log.debug('Trial has expired.');
+
+                event.reply('trial-expired');
+                return;
+            }
+
+            setTimeout(() => {
+                this.licenseWindow.close();
+                this.mainWindow.show();
+            }, 3000);
+        })
     }
 
     getLicenseValidationRequestData(licenseKey, email = null) {
@@ -319,6 +348,12 @@ module.exports = class Unlock {
         }
 
         return data;
+    }
+
+    trialExpired() {
+        const trialStart = this.store.get('trial.start');
+
+        return dayjs().subtract(this.config.license.trial.value, this.config.license.trial.unit).isAfter(dayjs.unix(trialStart));
     }
 
     registerFingerprint() {

@@ -1,7 +1,7 @@
 import Alpine from 'alpinejs';
 const { ipcRenderer } = require('electron');
 
-window.Unlock = () => {    
+window.Unlock = () => {
     return {
         isReady: false,
         loading: false,
@@ -27,6 +27,10 @@ window.Unlock = () => {
                 this.emailError = arg.emailError;
             });
 
+            ipcRenderer.on('trial-expired', (event, arg) => {
+                alert(this.prompt.trialExpired);
+            });
+
             ipcRenderer.on('license-activated', (event, arg) => {
                 setTimeout(() => {
                     this.activated = true;
@@ -44,6 +48,10 @@ window.Unlock = () => {
             this.licenseError = null;
 
             ipcRenderer.send('attempt-license-activation', { licenseKey: this.licenseKey, email: this.email });
+        },
+
+        startTrial() {
+            ipcRenderer.send('attempt-trial-run');
         }
     }
 }
