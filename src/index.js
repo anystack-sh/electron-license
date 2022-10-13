@@ -285,7 +285,7 @@ module.exports = class Unlock {
                                 if (error.response.status === 422) {
                                     event.reply('license-activation-failed', {
                                         licenseError: this.config.prompt.errors[error.response.data.errors['license']],
-                                        emailError: error.response.data.errors['scope.licensee.email'],
+                                        emailError: error.response.data.errors['scope.contact.email'],
                                     });
                                 }
                             });
@@ -340,7 +340,7 @@ module.exports = class Unlock {
         if (this.config.license.requireEmail) {
             data = _.merge(data, {
                 scope: {
-                    licensee: {
+                    contact: {
                         email: email,
                     }
                 }

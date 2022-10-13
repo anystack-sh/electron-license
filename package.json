@@ -1,6 +1,6 @@
 {
     "name": "@unlocksh/electron-license",
-    "version": "0.0.9",
+    "version": "0.0.11",
     "main": "src/index.js",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1"
@@ -23,7 +23,17 @@
     "author": "Philo Hermans <philo@unlock.sh>",
     "homepage": "https://unlock.sh",
     "license": "MIT",
+    "dependencies": {
+        "alpinejs": "^3.2.2",
+        "lodash": "^4.17.21",
+        "node-machine-id": "^1.1.12",
+        "electron-log": "^4.4.1",
+        "electron-store": "^8.0.0",
+        "axios": "^0.21.1",
+        "dayjs": "^1.10.6"
+    },
     "devDependencies": {
+        "electron": "^13.1.7",
         "@tailwindcss/forms": "^0.3.3",
         "autoprefixer": "^10.3.1",
         "laravel-mix": "^6.0.27",
@@ -33,15 +43,5 @@
     "bugs": {
         "url": "https://github.com/unlock-sh/electron-license/issues"
     },
-    "description": "Add license and auto-update to your Electron applications with Unlock.",
-    "dependencies": {
-        "alpinejs": "^3.2.2",
-        "lodash": "^4.17.21",
-        "node-machine-id": "^1.1.12",
-        "electron-log": "^4.4.1",
-        "electron": "^13.1.7",
-        "electron-store": "^8.0.0",
-        "axios": "^0.21.1",
-        "dayjs": "^1.10.6"
-    }
+    "description": "Add license and auto-update to your Electron applications with Unlock."
 }
