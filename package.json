@@ -1,13 +1,13 @@
 {
-    "name": "@unlocksh/electron-license",
-    "version": "0.0.11",
+    "name": "@anystack/electron-license",
+    "version": "0.0.12",
     "main": "src/index.js",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/unlock-sh/electron-license.git"
+        "url": "git+https://github.com/anystack-sh/electron-license.git"
     },
     "files": [
         "license/license.css",
@@ -20,8 +20,8 @@
         "autoupdate",
         "unlock"
     ],
-    "author": "Philo Hermans <philo@unlock.sh>",
-    "homepage": "https://unlock.sh",
+    "author": "Philo Hermans <philo@anystack.sh>",
+    "homepage": "https://anystack.sh",
     "license": "MIT",
     "dependencies": {
         "alpinejs": "^3.2.2",
@@ -41,7 +41,7 @@
         "tailwindcss": "^2.2.7"
     },
     "bugs": {
-        "url": "https://github.com/unlock-sh/electron-license/issues"
+        "url": "https://github.com/anystack-sh/electron-license/issues"
     },
-    "description": "Add license and auto-update to your Electron applications with Unlock."
+    "description": "Add license and auto-update to your Electron applications with Anystack."
 }

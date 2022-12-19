@@ -51,17 +51,17 @@ module.exports = class Unlock {
                 },
             },
             updater: {
-                url: "https://dist.unlock.sh/v1/electron",
+                url: "https://dist.anystack.sh/v1/electron",
             },
             prompt: {
-                title: "Unlock",
+                title: "Anystack",
                 subtitle: "Activate your license to get started",
-                logo: "https://unlock.sh/img/unlock-logo-grey.svg",
+                logo: "https://anystack.sh/img/emblem.svg",
                 email: "Email address",
                 licenseKey: "License key",
                 activateLicense: "Activate license",
-                trial: "Try Unlock for 7 days",
-                trialExpired: "Thank you for trying Unlock. Your trial has expired; to continue, please purchase a license.",
+                trial: "Try for 7 days",
+                trialExpired: "Thank you for trying Anystack. Your trial has expired; to continue, please purchase a license.",
                 errors: {
                     "NOT_FOUND": "Your license information did not match our records.",
                     "SUSPENDED": "Your license has been suspended.",
