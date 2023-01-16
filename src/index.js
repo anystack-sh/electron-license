@@ -35,7 +35,7 @@ module.exports = class Unlock {
     buildConfig(config) {
         return _.merge({
             api: {
-                url: "https://api.unlock.sh/v1",
+                url: "https://api.anystack.sh/v1",
             },
             license: {
                 requireEmail: false,
