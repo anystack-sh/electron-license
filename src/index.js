@@ -86,6 +86,13 @@ module.exports = class Unlock {
 
         this.registerFingerprint();
         this.registerRendererHandlers();
+
+        setInterval(() => {
+            if (this.checkinRequired()) {
+                log.debug('A license check-in is required.');
+                this.verifyDeviceLicense();
+            }
+        }, 10000);
     }
 
     ifAuthorized(mainWindow) {
@@ -152,7 +159,11 @@ module.exports = class Unlock {
     }
 
     checkinRequired() {
-        const lastCheckIn = this.store.get('license.lastCheckIn');
+        const lastCheckIn = this.store.get('license.lastCheckIn', false);
+
+        if (lastCheckIn === false) {
+            return false;
+        }
 
         return dayjs().subtract(this.config.license.checkIn.value, this.config.license.checkIn.unit).isAfter(dayjs.unix(lastCheckIn));
     }
