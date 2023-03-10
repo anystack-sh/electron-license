@@ -137,12 +137,12 @@ module.exports = class Unlock {
                 prepend += '../'
             }
 
-            if (path.resolve(__dirname).includes('@unlocksh') == true) {
+            if (path.resolve(__dirname).includes('@anystack') == true) {
                 prepend += '../'
             }
 
             if (path.resolve(__dirname).includes('node_modules') == false) {
-                prepend += 'node_modules/@unlocksh/electron-license';
+                prepend += 'node_modules/@anystack/electron-license';
             }
 
             if (process.platform === 'darwin') {
