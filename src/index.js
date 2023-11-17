@@ -142,7 +142,7 @@ module.exports = class Unlock {
             }
 
             if (path.resolve(__dirname).includes('node_modules') == false) {
-                prepend += 'node_modules/@anystack/electron-license';
+                prepend += 'node_modules/@anystack/electron-license/';
             }
 
             if (process.platform === 'darwin') {
