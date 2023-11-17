@@ -142,14 +142,14 @@ module.exports = class Unlock {
             }
 
             if (path.resolve(__dirname).includes('node_modules') == false) {
-                prepend += 'node_modules/@anystack/electron-license';
+                prepend += 'node_modules/@anystack/electron-license/';
             }
 
             if (process.platform === 'darwin') {
                 prepend += '/';
             }
 
-            this.licenseWindow.loadFile(path.resolve(__dirname, prepend + '/license/license.html'), { query: { "data": JSON.stringify(this.config) } });
+            this.licenseWindow.loadFile(path.resolve(__dirname, prepend + 'license/license.html'), { query: { "data": JSON.stringify(this.config) } });
         } else {
             this.licenseWindow.loadFile(process.resourcesPath + '/license/license.html', { query: { "data": JSON.stringify(this.config) } });
         }
